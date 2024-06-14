@@ -64,32 +64,26 @@ class LinearAnimation(AnimationBase):
 
 
 class AnimationScheduler():
-    animations: queue.Queue[AnimationBase] = queue.Queue()
-    # Get the first animation as the current animation
-    currentAnimation: Union[AnimationBase, None] = animations.queue[0] if not animations.empty() else None
-
-    # Get the second animation as the next animation, or None if there is no second animation
-    nextAnimation: Union[AnimationBase, None] = animations.queue[1] if len(animations.queue) > 1 else None
-
     def __init__(self):
-        self.animations = []
+        self.animations = queue.Queue()
+        self.currentAnimation: Optional[AnimationBase] = None
+        self.nextAnimation: Optional[AnimationBase] = None
     
     def appendToQueue(self, animation):
         self.animations.put(animation)
 
-    def returnQueue(self):
-        # loop and get names
-        pass
+    def returnQueue(self) -> List[str]:
+        return [animation.name for animation in list(self.animations.queue)]
    
     def deleteFromQueue(self):
-        #delete item
-        pass
+        if not self.animations.empty():
+            self.animations.get()
+            self.currentAnimation = self.animations.queue[0] if not self.animations.empty() else None
     
-    def getPositions(self):
-        activeAnimations = list[AnimationBase]
-        # loop through all animations
-        for animation in self.animations:
-            if animation is not None and animation.isPlaying:
+    def getPositions(self) -> List[float]:
+        activeAnimations = []
+        for animation in list(self.animations.queue):
+            if animation.isPlaying:
                 activeAnimations.append(animation)
         
         return self.positions
@@ -121,7 +115,7 @@ mySineAnimation = SinewaveAnimation(starttime=9, max_amplitude=100)
 myLinearAnimation = LinearAnimation(starttime=10, speed=100)
 myGroupAnimation = AnimationGroupAdditive(starttime=99, animations=[mySineAnimation, myLinearAnimation])
 
-#scheduler.appendToQueue(mySineAnimation)
+scheduler.appendToQueue(mySineAnimation)
 #scheduler.appendToQueue(myLinearAnimation)
 #scheduler.appendToQueue(myGroupAnimation)
 
