@@ -19,8 +19,9 @@ def main():
 
     # Define animations with start times in seconds
     mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100, min_frequency=0.5, max_frequency=2.0)
-    myLinearAnimation = LinearAnimation(starttime=2, speed=100)
-    myGroupAnimation = AnimationGroupAdditive(starttime=5, animations=[mySineAnimation, myLinearAnimation])
+    myLinearAnimation = LinearAnimation(starttime=42, speed=100)
+    myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
+    myLinearAnimation = LinearAnimation(starttime=20, speed=90)
 
     # Append animations to scheduler
     scheduler.appendToQueue(mySineAnimation)

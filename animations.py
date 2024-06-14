@@ -11,16 +11,18 @@ class AnimationBase:
     starttime: int
     isPlaying: bool
     positions: List[float]
-    ballsPerRing: List[int] = [50, 41, 32]
-    numberOfRings: int = 3
+    ballsPerRing: List[int]
+    numberOfRings: int
     totalNumberOfBalls: int
 
-    def __init__(self, name: str, starttime: int):
+    def __init__(self, name: str, starttime: int, ballsPerRing: List[int] = [50, 41, 32]):
         self.name = name
         self.starttime = starttime
         self.isPlaying = False
-        self.positions = [0] * sum(AnimationBase.ballsPerRing)
-        self.totalNumberOfBalls = sum(AnimationBase.ballsPerRing)
+        self.ballsPerRing = ballsPerRing
+        self.numberOfRings = len(ballsPerRing)
+        self.positions = [0] * sum(self.ballsPerRing)
+        self.totalNumberOfBalls = sum(self.ballsPerRing)
     
     def isComplete(self) -> bool:
         return False
