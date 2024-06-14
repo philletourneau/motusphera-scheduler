@@ -82,7 +82,7 @@ def timer_callback():
 previous_time = time.time()
 
 # Define animations with start times in seconds
-mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100, min_frequency=0.5, max_frequency=2.0)
+mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100, min_frequency=1.8, max_frequency=5.0)
 myLinearAnimation = LinearAnimation(starttime=42, speed=100)
 myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
 myLinearAnimation = LinearAnimation(starttime=20, speed=90)
