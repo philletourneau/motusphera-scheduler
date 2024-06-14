@@ -29,7 +29,7 @@ class AnimationBase():
 class AnimationGroupAdditive(AnimationBase):
     animations: list[AnimationBase]
     def __init__(self, starttime, animations):
-        AnimationBase.__init__(self, "group", starttime)
+        super().__init__("group", starttime)
         self.animations = animations
     
     def updatePositions(self):
@@ -44,8 +44,8 @@ class AnimationGroupAdditive(AnimationBase):
 class SinewaveAnimation(AnimationBase):
     max_amplitude: int
     def __init__(self, starttime, max_amplitude):
-        AnimationBase.__init__(self, "sine wave", starttime)
-        max_amplitude = max_amplitude
+        super().__init__("sine wave", starttime)
+        self.max_amplitude = max_amplitude
     
     def updatePositions(self):
         self.positions = [math.sin(i) * self.max_amplitude for i in range(0, 360)]
@@ -54,8 +54,8 @@ class SinewaveAnimation(AnimationBase):
 class LinearAnimation(AnimationBase):
     speed: int
     def __init__(self, starttime, speed):
-        AnimationBase.__init__(self, "linear", starttime)
-        speed = speed
+        super().__init__("linear", starttime)
+        self.speed = speed
     
     def updatePositions(self):
         self.positions = [1 + 1]
