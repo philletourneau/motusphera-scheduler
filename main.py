@@ -77,15 +77,14 @@ def main():
     previous_time = time.time()
 
     # Define animations with start times in seconds
-    mySineAnimation = SinewaveAnimation(starttime=0, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
-    myLinearAnimation = LinearAnimation(starttime=42, speed=100)
+    mySineAnimation = SinewaveAnimation(starttime=40, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
+    myLinearAnimation = LinearAnimation(starttime=0, speed=0.5)
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
-    myLinearAnimation = LinearAnimation(starttime=20, speed=90)
 
     # Append animations to scheduler
-    scheduler.appendToQueue(mySineAnimation)
     scheduler.appendToQueue(myLinearAnimation)
     scheduler.appendToQueue(myGroupAnimation)
+    scheduler.appendToQueue(mySineAnimation)
 
     # Pretty print the queued animations
     if use_tui:
@@ -105,12 +104,17 @@ def main():
         interval = current_time - previous_time
         print(f"Interval between timer callbacks: {interval:.6f} seconds")
         positions = scheduler.nextFrame(current_time, previous_time)
+        if positions is None:
+            print("Error: positions is None")
+            return
         if simulate:
             output_positions(positions)
         intervalms = int((interval * 1000))
         send_to_modbus(positions, intervalms)
+        # Print only the first 6 positions
+        #print("Positions: {}".format(positions[:6]))
         previous_time = current_time
-        threading.Timer(0.1, timer_callback).start()
+        threading.Timer(0.04, timer_callback).start()
 
     # Start the timer
     timer_callback()
