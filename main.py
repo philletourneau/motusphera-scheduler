@@ -30,7 +30,7 @@ def main():
 
     # Pretty print the queued animations
     if use_tui:
-        scheduler.getAnimationDetails(use_rich=True)
+        scheduler.getAnimationDetails()
     else:
         animation_details = scheduler.getAnimationDetails()
         for detail in animation_details:

@@ -37,7 +37,7 @@ class AnimationGroupAdditive(AnimationBase):
     animations: List[AnimationBase]
 
     def __init__(self, starttime: int, animations: List[AnimationBase]):
-        super().__init__("group", starttime)
+        super().__init__("combo", starttime)
         self.animations = animations
     
     def updatePositions(self):
@@ -68,10 +68,14 @@ class SinewaveAnimation(AnimationBase):
         current_time = time.time()
         elapsed_time = current_time - self.start_time
         
+        # Slow down the animation by scaling down the elapsed time
+        slow_factor = 0.3  # Adjust this factor to slow down the animation (0.5 means half speed)
+        scaled_elapsed_time = elapsed_time * slow_factor
+        
         # Calculate the current frequency using a sinusoidal function
         frequency_range = (self.max_frequency - self.min_frequency) / 2
         frequency_offset = (self.max_frequency + self.min_frequency) / 2
-        current_frequency = frequency_range * math.sin(elapsed_time) + frequency_offset
+        current_frequency = frequency_range * math.sin(scaled_elapsed_time) + frequency_offset
         
         self.positions = [(math.sin(math.radians(i * current_frequency)) * self.max_amplitude + self.max_amplitude) / (2 * self.max_amplitude) for i in range(360)]
 
@@ -119,27 +123,18 @@ class AnimationScheduler:
                 positions[i] += animation.positions[i]
         return positions
     
-    def getAnimationDetails(self, use_rich=False):
-        if use_rich:
-            from rich.console import Console
-            from rich.table import Table
-
-            console = Console()
-            table = Table(title="Animation Queue")
-
-            table.add_column("Animation Name", style="cyan", no_wrap=True)
-            table.add_column("Parameters", style="magenta")
-
-            for animation in self.animations.queue:
-                params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items() if k != 'positions')
-                table.add_row(animation.name, params)
-
-            console.print(table)
-        else:
+    def getAnimationDetails(self):
             details = []
+
+            # Include current animation if it exists
+            if hasattr(self, 'current_animation') and self.current_animation:
+                current_animation = self.current_animation
+                params = '\n'.join(f"  {k}: {v}" for k, v in current_animation.__dict__.items() if k != 'positions')
+                details.append(f"[Current] {current_animation.name}:\n{params}")
+
             for animation in self.animations.queue:
-                params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items() if k != 'positions')
-                details.append(f"{animation.name}({params})")
+                params = '\n'.join(f"  {k}: {v}" for k, v in animation.__dict__.items() if k != 'positions')
+                details.append(f"{animation.name}:\n{params}")
             return details
 
     def nextFrame(self, currentTime, previousTime):

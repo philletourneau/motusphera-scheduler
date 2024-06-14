@@ -1,7 +1,6 @@
 import curses
 import threading
 import time
-from io import StringIO  # Import StringIO
 from animations import AnimationScheduler, SinewaveAnimation, LinearAnimation, AnimationGroupAdditive
 
 scheduler = AnimationScheduler()
@@ -46,33 +45,16 @@ def update_display(stdscr):
         
         positions_win.refresh()
 
-       # Update queue window
+        # Update queue window
         queue_win.clear()
         queue_win.bkgd(curses.color_pair(2))
         queue_win.box()
         queue_win.addstr(0, 2, "Animation Queue", curses.color_pair(2) | curses.A_BOLD)
         
-        # Capture rich output as a string
-        from rich.console import Console
-        from rich.table import Table
-
-        console = Console(file=StringIO())
-        table = Table(title="Animation Queue")
-
-        table.add_column("Animation Name", style="cyan", no_wrap=True)
-        table.add_column("Parameters", style="magenta")
-
         details = scheduler.getAnimationDetails()
-        for detail in details:
-            table.add_row(*detail.split('(', 1))
-
-        console.print(table)
-        rich_output = console.file.getvalue()
-
-        # Display rich output within the curses window
-        for idx, line in enumerate(rich_output.splitlines()):
+        for idx, detail in enumerate(details):
             try:
-                queue_win.addstr(idx + 1, 2, line[:width-4])
+                queue_win.addstr(idx + 1, 2, detail[:width-4])
             except curses.error:
                 pass  # Ignore errors caused by writing out of bounds
 
