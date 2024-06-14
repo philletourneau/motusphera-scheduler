@@ -27,11 +27,11 @@ class AnimationBase:
     def isComplete(self) -> bool:
         return False
 
-    def updatePositions(self):
+    def updatePositions(self, currentTime: float, previousTime: float):
         pass
 
     def calculateNextFrame(self, currentTime: float, previousTime: float):
-        self.updatePositions()
+        self.updatePositions(currentTime, previousTime)
 
 class AnimationGroupAdditive(AnimationBase):
     animations: List[AnimationBase]
@@ -40,11 +40,11 @@ class AnimationGroupAdditive(AnimationBase):
         super().__init__("combo", starttime)
         self.animations = animations
     
-    def updatePositions(self):
+    def updatePositions(self, currentTime: float, previousTime: float):
         self.positions = [0] * self.totalNumberOfBalls
         
         for animation in self.animations:
-            animation.updatePositions()
+            animation.updatePositions(currentTime, previousTime)
             for i in range(len(self.positions)):
                 self.positions[i] += animation.positions[i]
         # Normalize the positions to ensure they are between 0 and 1
@@ -64,9 +64,8 @@ class SinewaveAnimation(AnimationBase):
         self.max_frequency = max_frequency
         self.start_time = time.time()
     
-    def updatePositions(self):
-        current_time = time.time()
-        elapsed_time = current_time - self.start_time
+    def updatePositions(self, currentTime: float, previousTime: float):
+        elapsed_time = currentTime - self.start_time
         
         # Slow down the animation by scaling down the elapsed time
         slow_factor = 0.3  # Adjust this factor to slow down the animation (0.5 means half speed)
@@ -86,7 +85,7 @@ class LinearAnimation(AnimationBase):
         super().__init__("linear", starttime)
         self.speed = speed
     
-    def updatePositions(self):
+    def updatePositions(self, currentTime: float, previousTime: float):
         self.positions = [i / self.totalNumberOfBalls for i in range(self.totalNumberOfBalls)]
 
 class AnimationScheduler:
@@ -152,3 +151,4 @@ class AnimationScheduler:
                 self.currentAnimation = self.animations.queue[0] if not self.animations.empty() else None
             
             return self.currentAnimation.positions
+
