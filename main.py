@@ -12,8 +12,15 @@ from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
 MODBUS_MULTIPLIER = 12000
 TIMING_SPEED_BUFFER = 40
 
+
+# Detect platform and set the shared library path
+if platform.system() == 'Darwin':  # macOS
+    lib_path = './prebuilt/modbus_utils/darwin/libmodbus_utils.dylib'
+else:
+    lib_path = './prebuilt/modbus_utils/linux/libmodbus_utils.so'
+
 # Load the shared library
-modbus_lib = ctypes.CDLL('./libmodbus_utils.dylib')
+modbus_lib = ctypes.CDLL(lib_path)
 
 # Define the argument and return types of the functions you will use
 modbus_lib.initialize_modbus.argtypes = [ctypes.c_char_p, ctypes.c_int]

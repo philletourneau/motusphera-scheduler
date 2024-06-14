@@ -10,7 +10,7 @@ ifeq ($(DEBUG), 1)
     CFLAGS += -g
 endif
 
-DEPS = config.h
+DEPS = prebuilt/modbus_utils/include/modbus_utils.h
 
 # Detect platform
 UNAME_S := $(shell uname -s)
@@ -18,18 +18,20 @@ UNAME_S := $(shell uname -s)
 # Platform-specific settings
 ifeq ($(UNAME_S), Darwin)
     # macOS settings
-    CFLAGS += -I/opt/homebrew/include -Iprebuilt/libmodbus/include
+    CFLAGS += -I/opt/homebrew/include -Iprebuilt/libmodbus/include -Iprebuilt/modbus_utils/include
     LDFLAGS += -L/opt/homebrew/lib -Lprebuilt/libmodbus/darwin
     LIBMODBUS_LIB = prebuilt/libmodbus/darwin/libmodbus.dylib
-    RPATH_FLAG = -Wl,-rpath,lib/libmodbus/src/.libs -Wl
+    RPATH_FLAG = -Wl,-rpath,@loader_path/../../libmodbus/darwin
     SHARED_LIB_EXT = dylib
+    SHARED_LIB_DIR = prebuilt/modbus_utils/darwin
 else
     # Assume Linux (Raspberry Pi) settings
-    CFLAGS += -I/usr/include -Iprebuilt/libmodbus/include
+    CFLAGS += -I/usr/include -Iprebuilt/libmodbus/include -Iprebuilt/modbus_utils/include
     LDFLAGS += -L/usr/lib -Lprebuilt/libmodbus/linux
     LIBMODBUS_LIB = prebuilt/libmodbus/linux/libmodbus.so
     RPATH_FLAG = -Wl,-rpath=prebuilt/libmodbus/linux -Wl
     SHARED_LIB_EXT = so
+    SHARED_LIB_DIR = prebuilt/modbus_utils/linux
 endif
 
 # Include Directories
@@ -42,17 +44,20 @@ SRCS = modbus_utils.c
 OBJS = $(SRCS:.c=.o)
 
 # Shared Library Name
-SHARED_LIB = libmodbus_utils.$(SHARED_LIB_EXT)
+SHARED_LIB = $(SHARED_LIB_DIR)/libmodbus_utils.$(SHARED_LIB_EXT)
 
 # Default target
-all: $(SHARED_LIB)
+all: $(SHARED_LIB_DIR) $(SHARED_LIB)
+
+# Ensure the output directory exists
+$(SHARED_LIB_DIR):
+	mkdir -p $(SHARED_LIB_DIR)
 
 # Build the shared library
 $(SHARED_LIB): $(OBJS)
 	$(CC) -shared -o $@ $(OBJS) $(LDFLAGS) $(RPATH_FLAG) -lmodbus -lm
 ifeq ($(UNAME_S), Darwin)
-	install_name_tool -delete_rpath lib/libmodbus/src/.libs $@
-	install_name_tool -add_rpath @loader_path/prebuilt/libmodbus/darwin $@
+	install_name_tool -change @rpath/libmodbus.dylib @loader_path/../../libmodbus/darwin/libmodbus.dylib $@
 endif
 
 # Compile source files into object files
@@ -62,4 +67,4 @@ endif
 # Clean up build files
 .PHONY: clean
 clean:
-	rm -f *.o $(SHARED_LIB)
+	rm -f *.o $(SHARED_LIB_DIR)/*.dylib $(SHARED_LIB_DIR)/*.so
