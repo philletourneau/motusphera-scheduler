@@ -12,12 +12,50 @@ from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
 MODBUS_MULTIPLIER = 12000
 TIMING_SPEED_BUFFER = 40
 
-
 # Detect platform and set the shared library path
 if platform.system() == 'Darwin':  # macOS
     lib_path = './prebuilt/modbus_utils/darwin/libmodbus_utils.dylib'
-else:
+    # Define the Mach kernel functions for macOS
+    libc = ctypes.CDLL('/usr/lib/libSystem.dylib')
+    mach_absolute_time = libc.mach_absolute_time
+    mach_absolute_time.restype = ctypes.c_uint64
+
+    class mach_timebase_info_data_t(ctypes.Structure):
+        _fields_ = [("numer", ctypes.c_uint32), ("denom", ctypes.c_uint32)]
+
+    mach_timebase_info = libc.mach_timebase_info
+    mach_timebase_info.argtypes = [ctypes.POINTER(mach_timebase_info_data_t)]
+    mach_timebase_info.restype = None
+
+    timebase_info = mach_timebase_info_data_t()
+    mach_timebase_info(ctypes.byref(timebase_info))
+
+    def sleep_ns(nanos):
+        start = mach_absolute_time()
+        end = start + nanos * timebase_info.denom // timebase_info.numer
+        while mach_absolute_time() < end:
+            pass
+else:  # Linux
     lib_path = './prebuilt/modbus_utils/linux/libmodbus_utils.so'
+
+    # Define clock_nanosleep for Linux
+    libc = ctypes.CDLL('libc.so.6')
+    CLOCK_MONOTONIC = 1
+    TIMER_ABSTIME = 1
+
+    class timespec(ctypes.Structure):
+        _fields_ = [("tv_sec", ctypes.c_long), ("tv_nsec", ctypes.c_long)]
+
+    def sleep_ns(nanos):
+        ts = timespec()
+        libc.clock_gettime(CLOCK_MONOTONIC, ctypes.byref(ts))
+        ts.tv_sec += nanos // 1_000_000_000
+        ts.tv_nsec += nanos % 1_000_000_000
+        if ts.tv_nsec >= 1_000_000_000:
+            ts.tv_sec += 1
+            ts.tv_nsec -= 1_000_000_000
+        libc.clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, ctypes.byref(ts), None)
+
 
 # Load the shared library
 modbus_lib = ctypes.CDLL(lib_path)
@@ -95,7 +133,7 @@ def main():
 
     # Define animations with start times in seconds
     mySineAnimation = SinewaveAnimation(starttime=40, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
-    myLinearAnimation = LinearAnimation(starttime=0, speed=0.3)
+    myLinearAnimation = LinearAnimation(starttime=0, speed=0.2)
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
 
     # Append animations to scheduler
@@ -126,25 +164,29 @@ def main():
         time.sleep(8)
 
     def timer_callback():
-        current_time = time.time()
-        nonlocal previous_time
-        interval = current_time - previous_time
-        print(f"Interval between timer callbacks: {interval * 1000:.0f} milliseconds")
-        positions = scheduler.nextFrame(current_time, previous_time)
-        if positions is None:
-            print("Error: positions is None")
-            return
-        if simulate:
-            output_positions(positions)
-        intervalms = int((interval * 1000))
-        send_to_modbus(positions, intervalms)
-        # Print only the first 6 positions
-        #print("Positions: {}".format(positions[:6]))
-        previous_time = current_time
-        threading.Timer(0.08, timer_callback).start()
+        previous_time = time.time()
+        desired_interval_ns = 80_000_000  # Desired interval in nanoseconds (0.08 seconds)
+        while True:
+            current_time = time.time()
+            interval = current_time - previous_time
+            interval_ms = interval * 1000
+            print(f"Interval between callbacks: {interval_ms:.0f} milliseconds")
+            positions = scheduler.nextFrame(current_time, previous_time)
+            if positions is None:
+                print("Error: positions is None")
+                continue
+            if simulate:
+                output_positions(positions)
+            intervalms = int((interval * 1000))
+            send_to_modbus(positions, intervalms)
+            previous_time = current_time
+            sleep_ns(desired_interval_ns)
 
+    # # Start the timer
+    # timer_callback()
     # Start the timer
-    timer_callback()
+    timer_thread = threading.Thread(target=timer_callback)
+    timer_thread.start()
 
     # Set up signal handler for graceful termination
     signal.signal(signal.SIGINT, cleanup)
