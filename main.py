@@ -1,6 +1,8 @@
 import math
 from typing import Union, Optional, List
 import queue
+import threading
+import time
 
 class AnimationBase():
     name: str
@@ -101,9 +103,17 @@ class AnimationScheduler():
             #set the current animation
         # ok now time to translate the final 0 to 1's into 0 to 110000
 
+def timer_callback():
+    current_time = time.time()
+    global previous_time
+    scheduler.nextFrame(current_time, previous_time)
+    print("Positions: ", scheduler.getPositions())
+    #print("Queue: ", scheduler.returnQueue())
+    print("Details: ", scheduler.getAnimationDetails())
+    previous_time = current_time
+    threading.Timer(0.25, timer_callback).start()
 
-#timer calls scheduler.nextFrame 
-
+previous_time = time.time()
 scheduler = AnimationScheduler()
 
 
@@ -113,5 +123,10 @@ myGroupAnimation = AnimationGroupAdditive(starttime=99, animations=[mySineAnimat
 
 #scheduler.appendToQueue(mySineAnimation)
 #scheduler.appendToQueue(myLinearAnimation)
-scheduler.appendToQueue(myGroupAnimation)
-    
+#scheduler.appendToQueue(myGroupAnimation)
+
+#timer calls scheduler.nextFrame every 250ms
+
+
+# Start the timer
+timer_callback()
