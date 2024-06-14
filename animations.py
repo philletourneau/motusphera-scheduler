@@ -56,20 +56,21 @@ class SinewaveAnimation(AnimationBase):
     max_amplitude: int
     min_frequency: float
     max_frequency: float
+    elapsed_time: float
 
     def __init__(self, starttime: int, max_amplitude: int, min_frequency: float, max_frequency: float):
         super().__init__("sine wave", starttime)
         self.max_amplitude = max_amplitude
         self.min_frequency = min_frequency
         self.max_frequency = max_frequency
-        self.start_time = time.time()
+        self.elapsed_time = 0.0
     
-    def updatePositions(self, currentTime: float, previousTime: float):
-        elapsed_time = currentTime - self.start_time
+    def updatePositions(self, currentTime: float, deltaTime: float):
+        self.elapsed_time += deltaTime
         
         # Slow down the animation by scaling down the elapsed time
-        slow_factor = 0.3  # Adjust this factor to slow down the animation (0.5 means half speed)
-        scaled_elapsed_time = elapsed_time * slow_factor
+        slow_factor = 0.1  # Adjust this factor to slow down the animation (0.5 means half speed)
+        scaled_elapsed_time = self.elapsed_time * slow_factor
         
         # Calculate the current frequency using a sinusoidal function
         frequency_range = (self.max_frequency - self.min_frequency) / 2
