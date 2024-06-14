@@ -4,7 +4,10 @@ import queue
 import threading
 import time
 
-class AnimationBase():
+# Initialize program start time
+program_start_time = time.time()
+
+class AnimationBase:
     name: str
     starttime: int
     isPlaying: bool
@@ -28,7 +31,7 @@ class AnimationBase():
 
     def calculateNextFrame(self, currentTime: float, previousTime: float):
         self.updatePositions()
-    
+
 class AnimationGroupAdditive(AnimationBase):
     animations: List[AnimationBase]
 
@@ -37,13 +40,12 @@ class AnimationGroupAdditive(AnimationBase):
         self.animations = animations
     
     def updatePositions(self):
-        #iterate through positions list and reset them to 0
-        self.positions.clear()
+        self.positions = [0] * self.totalNumberOfBalls
         
         for animation in self.animations:
             animation.updatePositions()
-            self.positions += animation.positions
-        
+            for i in range(len(self.positions)):
+                self.positions[i] += animation.positions[i]
 
 class SinewaveAnimation(AnimationBase):
     max_amplitude: int
@@ -53,10 +55,9 @@ class SinewaveAnimation(AnimationBase):
         self.max_amplitude = max_amplitude
     
     def updatePositions(self):
-        self.positions = [math.sin(i) * self.max_amplitude for i in range(0, 360)]
-        print("updated positions in sinewave")
-        #output 0 to 1
-    
+        self.positions = [(math.sin(math.radians(i)) * self.max_amplitude + self.max_amplitude) / (2 * self.max_amplitude) for i in range(360)]
+        print("Updated positions in sinewave")
+
 class LinearAnimation(AnimationBase):
     speed: int
 
@@ -65,17 +66,20 @@ class LinearAnimation(AnimationBase):
         self.speed = speed
     
     def updatePositions(self):
-        self.positions = [1 + 1]
+        self.positions = [i / self.totalNumberOfBalls for i in range(self.totalNumberOfBalls)]
 
 
-class AnimationScheduler():
+class AnimationScheduler:
     def __init__(self):
         self.animations = queue.Queue()
         self.currentAnimation: Optional[AnimationBase] = None
         self.nextAnimation: Optional[AnimationBase] = None
     
-    def appendToQueue(self, animation):
+    def appendToQueue(self, animation: AnimationBase):
         self.animations.put(animation)
+        if not self.currentAnimation:
+            self.currentAnimation = self.animations.get()
+            self.nextAnimation = self.animations.queue[0] if not self.animations.empty() else None
 
     def returnQueue(self) -> List[str]:
         return [animation.name for animation in list(self.animations.queue)]
@@ -105,37 +109,40 @@ class AnimationScheduler():
         return details
 
     def nextFrame(self, currentTime, previousTime):
-        if self.currentAnimation is not None:
-            self.currentAnimation.calculateNextFrame(currentTime, previousTime)
-            if self.currentAnimation.isComplete():
-                self.currentAnimation = self.nextAnimation
+        # Check if currentAnimation should start
+        if self.currentAnimation and not self.currentAnimation.isPlaying:
+            elapsed_time = currentTime - program_start_time
+            if elapsed_time >= self.currentAnimation.starttime:
+                self.currentAnimation.isPlaying = True
 
-            #set the current animation
-        # ok now time to translate the final 0 to 1's into 0 to 110000
+        if self.currentAnimation and self.currentAnimation.isPlaying:
+            self.currentAnimation.calculateNextFrame(currentTime, previousTime)
+            print(f"Positions from {self.currentAnimation.name}: {self.currentAnimation.positions}")  # Print positions
+            if self.currentAnimation.isComplete():
+                self.deleteFromQueue()
+                self.currentAnimation = self.animations.queue[0] if not self.animations.empty() else None
 
 def timer_callback():
     current_time = time.time()
     global previous_time
     scheduler.nextFrame(current_time, previous_time)
-    print("Positions: ", scheduler.getPositions())
-    #print("Queue: ", scheduler.returnQueue())
-    print("Details: ", scheduler.getAnimationDetails())
+    #print("Positions: ", scheduler.getPositions())
+    #print("Details: ", scheduler.getAnimationDetails())
     previous_time = current_time
     threading.Timer(0.25, timer_callback).start()
 
 previous_time = time.time()
 scheduler = AnimationScheduler()
 
+# Define animations with start times in seconds
 mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100)
-myLinearAnimation = LinearAnimation(starttime=1, speed=100)
-myGroupAnimation = AnimationGroupAdditive(starttime=99, animations=[mySineAnimation, myLinearAnimation])
+myLinearAnimation = LinearAnimation(starttime=2, speed=100)
+myGroupAnimation = AnimationGroupAdditive(starttime=5, animations=[mySineAnimation, myLinearAnimation])
 
+# Append animations to scheduler
 scheduler.appendToQueue(mySineAnimation)
-#scheduler.appendToQueue(myLinearAnimation)
-#scheduler.appendToQueue(myGroupAnimation)
-
-#timer calls scheduler.nextFrame every 250ms
-
+scheduler.appendToQueue(myLinearAnimation)
+scheduler.appendToQueue(myGroupAnimation)
 
 # Start the timer
 timer_callback()
