@@ -1,8 +1,31 @@
 import sys
 import time
 import threading
+import ctypes
+import numpy as np
 from animations import AnimationScheduler, SinewaveAnimation, LinearAnimation, AnimationGroupAdditive
 from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
+
+# Load the shared library
+modbus_lib = ctypes.CDLL('./libmodbus_utils.dylib')
+
+# Define the argument and return types of the functions you will use
+modbus_lib.initialize_modbus.argtypes = [ctypes.c_char_p, ctypes.c_int]
+modbus_lib.initialize_modbus.restype = ctypes.c_void_p
+
+modbus_lib.send_positions_over_modbus.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint16), ctypes.c_uint16]
+modbus_lib.send_positions_over_modbus.restype = None
+
+modbus_lib.close_modbus.argtypes = [ctypes.c_void_p]
+modbus_lib.close_modbus.restype = None
+
+# Initialize the Modbus connection
+device = b'/dev/ttyUSB0'  # Replace with your actual device
+baud_rate = 9600
+ctx = modbus_lib.initialize_modbus(device, baud_rate)
+
+if not ctx:
+    raise Exception("Failed to initialize Modbus connection")
 
 # Create a global instance of SimulatedSculpture
 simulatedSculpture = None
@@ -55,6 +78,7 @@ def main():
         nonlocal previous_time
         positions = scheduler.nextFrame(current_time, previous_time)
         output_positions(positions)
+        send_to_modbus(positions)
         previous_time = current_time
         threading.Timer(0.25, timer_callback).start()
 
