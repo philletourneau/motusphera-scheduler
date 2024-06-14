@@ -64,20 +64,40 @@ class SinewaveAnimation(AnimationBase):
         self.min_frequency = min_frequency
         self.max_frequency = max_frequency
         self.elapsed_time = 0.0
-    
-    def updatePositions(self, currentTime: float, deltaTime: float):
-        self.elapsed_time += deltaTime
-        
-        # Slow down the animation by scaling down the elapsed time
-        slow_factor = 0.1  # Adjust this factor to slow down the animation (0.5 means half speed)
-        scaled_elapsed_time = self.elapsed_time * slow_factor
-        
+        self.last_positions = [0.0] * self.totalNumberOfBalls
+
+    def updatePositions(self, currentTime: float, previousTime: float):
+        self.elapsed_time += ((currentTime - previousTime)/5)  # Adjust this factor to control speed
+        print(self.elapsed_time)
+
         # Calculate the current frequency using a sinusoidal function
-        frequency_range = (self.max_frequency - self.min_frequency) / 2
+        frequency_range = (self.max_frequency - self.min_frequency)
         frequency_offset = (self.max_frequency + self.min_frequency) / 2
-        current_frequency = frequency_range * math.sin(scaled_elapsed_time) + frequency_offset
-        
-        self.positions = [(math.sin(math.radians(i * current_frequency)) * self.max_amplitude + self.max_amplitude) / (2 * self.max_amplitude) for i in range(360)]
+        current_frequency = (currentTime - previousTime)*frequency_range
+
+        # Introduce a frequency multiplier to make the sine wave pattern more pronounced
+        frequency_multiplier = 2.0  # Adjust this value to make the sine wave more visible
+
+        ball_index = 0
+
+        for ring in range(self.numberOfRings):
+            total_balls = self.ballsPerRing[ring]
+            ring_phase_offset = ring * (math.pi / 40)
+
+            for ball in range(total_balls):
+                # Calculate the angle for the current ball
+                angle = (2 * math.pi * ball) / total_balls * frequency_multiplier + ring_phase_offset
+                sine_value = math.sin(angle + current_frequency * self.elapsed_time)
+                target_position = (self.max_amplitude / 2) * (1 + sine_value)
+
+                self.positions[ball_index] = max(0, min(self.max_amplitude, target_position))
+                self.last_positions[ball_index] = self.positions[ball_index]
+
+                ball_index += 1
+
+        #print(self.positions)
+
+
 
 class LinearAnimation(AnimationBase):
     speed: int

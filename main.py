@@ -29,7 +29,7 @@ def main():
     previous_time = time.time()
 
     # Define animations with start times in seconds
-    mySineAnimation = SinewaveAnimation(starttime=0, max_amplitude=100, min_frequency=0.5, max_frequency=2.0)
+    mySineAnimation = SinewaveAnimation(starttime=0, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
     myLinearAnimation = LinearAnimation(starttime=42, speed=100)
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
     myLinearAnimation = LinearAnimation(starttime=20, speed=90)
