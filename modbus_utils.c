@@ -149,6 +149,32 @@ void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t tim
     #endif
 }
 
+void write_coils(modbus_t *ctx, int slave_id, int motor_id, int start_address, uint8_t *coils, int num_coils) {
+    // Calculate the full start address using motor_id and bit-shifting
+    start_address = (motor_id << 8) + start_address;
+
+    set_modbus_slave(ctx, slave_id);
+
+    #if MODBUS_DEBUG
+    modbus_set_debug(ctx, true);
+    #endif
+
+    configure_error_safe_modbus(ctx, slave_id);
+
+    // Set the response timeout for the coil commands
+    uint32_t timeout_sec = 0;  // seconds
+    uint32_t timeout_usec = 221000;  // microseconds (221ms)
+    modbus_set_response_timeout(ctx, timeout_sec, timeout_usec);
+
+    int rc = modbus_write_bits(ctx, start_address, num_coils, coils);
+    if (rc == -1) {
+        fprintf(stderr, "Failed to write coils: %s\n", modbus_strerror(errno));
+    } else {
+        printf("Coils written successfully\n");
+    }
+}
+
+
 void set_modbus_slave(modbus_t *ctx, int slave_id) {
     if (modbus_set_slave(ctx, slave_id) == -1) {
         fprintf(stderr, "Failed to set Modbus slave ID: %s\n", modbus_strerror(errno));

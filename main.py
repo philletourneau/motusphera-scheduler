@@ -10,6 +10,7 @@ from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
 
 # Define the MODBUS_MULTIPLIER
 MODBUS_MULTIPLIER = 12000
+TIMING_SPEED_BUFFER = 40
 
 # Load the shared library
 modbus_lib = ctypes.CDLL('./libmodbus_utils.dylib')
@@ -18,11 +19,18 @@ modbus_lib = ctypes.CDLL('./libmodbus_utils.dylib')
 modbus_lib.initialize_modbus.argtypes = [ctypes.c_char_p, ctypes.c_int]
 modbus_lib.initialize_modbus.restype = ctypes.c_void_p
 
+modbus_lib.write_coils.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_uint8), ctypes.c_int]
+modbus_lib.write_coils.restype = None
+
 modbus_lib.send_positions_over_modbus.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint16), ctypes.c_uint16]
 modbus_lib.send_positions_over_modbus.restype = None
 
 modbus_lib.close_modbus.argtypes = [ctypes.c_void_p]
 modbus_lib.close_modbus.restype = None
+
+def write_coils(ctx, slave_id, motor_id, start_address, coil_value):
+    coils = (ctypes.c_uint8 * 1)(coil_value)
+    modbus_lib.write_coils(ctx, slave_id, motor_id, start_address, coils, 1)
 
 # Determine the port based on the operating system
 if platform.system() == 'Darwin':  # MacOS
@@ -45,6 +53,7 @@ def send_to_modbus(positions, intervalms):
     # Convert the processed positions list to a ctypes array
     positions_array = (ctypes.c_uint16 * len(processed_positions))(*processed_positions)
     #time_delta_value = 280  # Example value, replace with your actual value
+    intervalms = intervalms + TIMING_SPEED_BUFFER
     modbus_lib.send_positions_over_modbus(ctx, positions_array, intervalms)
 
 # Create a global instance of SimulatedSculpture
@@ -68,6 +77,7 @@ def main():
     global simulatedSculpture
     use_tui = "tui" in sys.argv
     simulate = "--simulate" in sys.argv
+    homing = "--homing" in sys.argv
 
     if use_tui:
         import tui
@@ -78,7 +88,7 @@ def main():
 
     # Define animations with start times in seconds
     mySineAnimation = SinewaveAnimation(starttime=40, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
-    myLinearAnimation = LinearAnimation(starttime=0, speed=0.5)
+    myLinearAnimation = LinearAnimation(starttime=0, speed=0.3)
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
 
     # Append animations to scheduler
@@ -98,11 +108,21 @@ def main():
         # Initialize the SimulatedSculpture
         simulatedSculpture = SimulatedSculpture(ring_count=3, balls_per_ring=[50, 41, 32], step_size_mm=STEP_SIZE_MM, ball_start_y=5000)
 
+    if homing:
+        # Write coils for slave IDs 1 through 3, motor IDs 0 through 3, coil 1 set to true
+        for slave_id in range(1, 4):
+            for motor_id in range(4):
+                write_coils(ctx, slave_id, motor_id, 1, 1)
+                print("Slave ID: {}, Motor ID: {}, Coil 1 set to true".format(slave_id, motor_id))
+                time.sleep(0.1)
+    
+        time.sleep(8)
+
     def timer_callback():
         current_time = time.time()
         nonlocal previous_time
         interval = current_time - previous_time
-        print(f"Interval between timer callbacks: {interval:.6f} seconds")
+        print(f"Interval between timer callbacks: {interval * 1000:.0f} milliseconds")
         positions = scheduler.nextFrame(current_time, previous_time)
         if positions is None:
             print("Error: positions is None")
@@ -114,7 +134,7 @@ def main():
         # Print only the first 6 positions
         #print("Positions: {}".format(positions[:6]))
         previous_time = current_time
-        threading.Timer(0.04, timer_callback).start()
+        threading.Timer(0.08, timer_callback).start()
 
     # Start the timer
     timer_callback()
