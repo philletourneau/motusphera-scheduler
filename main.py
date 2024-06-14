@@ -132,14 +132,16 @@ def main():
     previous_time = time.time()
 
     # Define animations with start times in seconds
-    mySineAnimation = SinewaveAnimation(starttime=40, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
-    myLinearAnimation = LinearAnimation(starttime=0, speed=0.2)
+    mySineAnimation = SinewaveAnimation(starttime=0, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
+    myLinearAnimation = LinearAnimation(starttime=30, speed=0.2)
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
 
     # Append animations to scheduler
+    ## BUG the order they're appended makes a difference, it shouldnt'
+    scheduler.appendToQueue(mySineAnimation)
     scheduler.appendToQueue(myLinearAnimation)
     scheduler.appendToQueue(myGroupAnimation)
-    scheduler.appendToQueue(mySineAnimation)
+    
 
     # Pretty print the queued animations
     if use_tui:

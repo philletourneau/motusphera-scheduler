@@ -78,6 +78,7 @@ void configure_error_safe_modbus(modbus_t *ctx, int slave_id) {
 
 void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t time_delta_value) {
     struct timespec sleep_duration = {0, BUFFER_MS * 100000L};
+    struct timespec longer_sleep_duration = {0, (BUFFER_MS+30) * 100000L};
     #if DEBUG
     struct timespec loop_start_time, loop_end_time, write_start_time, write_end_time;
     clock_gettime(CLOCK_MONOTONIC, &loop_start_time);
@@ -111,7 +112,7 @@ void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t tim
         // Calculate the time taken for modbus_write_registers
         double write_time_ms = (write_end_time.tv_sec - write_start_time.tv_sec) * 1000.0 +
                                (write_end_time.tv_nsec - write_start_time.tv_nsec) / 1e6;
-        zlog_debug(c, "Unit %d took %.2f ms", unit_id, write_time_ms);
+        printf("Unit %d took %.2f ms", unit_id, write_time_ms);
         #endif
     }
     //set_modbus_slave(ctx, 1);
@@ -132,20 +133,21 @@ void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t tim
     //     }
     // };
 
-    nanosleep(&sleep_duration, NULL);
-    // Sync command 
+    nanosleep(&longer_sleep_duration, NULL);
+    
+    // Send Sync command 
     set_modbus_slave(ctx, 0); // Set to broadcast
     if (modbus_write_register(ctx, SYNC_REG_ADDR, time_delta_value) == -1) {
         fprintf(stderr, "Failed to send broadcast sync command: %s\n", modbus_strerror(errno));
     }
-    nanosleep(&sleep_duration, NULL);
+    nanosleep(&longer_sleep_duration, NULL);
 
     #if DEBUG
     clock_gettime(CLOCK_MONOTONIC, &loop_end_time);
     // Calculate the time taken for the entire loop iteration
     double loop_time_ms = (loop_end_time.tv_sec - loop_start_time.tv_sec) * 1000.0 +
                             (loop_end_time.tv_nsec - loop_start_time.tv_nsec) / 1e6;
-    zlog_debug(c, "Loop took %.2f ms", loop_time_ms);
+    printf("Loop took %.2f ms", loop_time_ms);
     #endif
 }
 
