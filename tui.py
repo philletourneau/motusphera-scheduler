@@ -1,6 +1,7 @@
 import curses
 import threading
 import time
+from io import StringIO  # Import StringIO
 from animations import AnimationScheduler, SinewaveAnimation, LinearAnimation, AnimationGroupAdditive
 
 scheduler = AnimationScheduler()
@@ -35,7 +36,9 @@ def update_display(stdscr):
                 for idx, pos in enumerate(positions):
                     try:
                         if isinstance(pos, (int, float)):
-                            positions_win.addstr(idx + 1, 2, f"Position {idx}: {pos:.4f}"[:width-4])
+                            # Map position value (0 to 1) to vertical position in the window
+                            vertical_pos = int((1 - pos) * (height // 2 - 2))  # -2 to account for box borders
+                            positions_win.addstr(vertical_pos + 1, idx * 2 + 2, 'O')  # Use 'O' to represent the ball
                         else:
                             positions_win.addstr(idx + 1, 2, f"Position {idx}: {pos}"[:width-4])
                     except curses.error:
@@ -43,14 +46,36 @@ def update_display(stdscr):
         
         positions_win.refresh()
 
-        # Update queue window
+       # Update queue window
         queue_win.clear()
         queue_win.bkgd(curses.color_pair(2))
         queue_win.box()
         queue_win.addstr(0, 2, "Animation Queue", curses.color_pair(2) | curses.A_BOLD)
+        
+        # Capture rich output as a string
+        from rich.console import Console
+        from rich.table import Table
+
+        console = Console(file=StringIO())
+        table = Table(title="Animation Queue")
+
+        table.add_column("Animation Name", style="cyan", no_wrap=True)
+        table.add_column("Parameters", style="magenta")
+
         details = scheduler.getAnimationDetails()
-        for idx, detail in enumerate(details):
-            queue_win.addstr(idx + 1, 2, detail)
+        for detail in details:
+            table.add_row(*detail.split('(', 1))
+
+        console.print(table)
+        rich_output = console.file.getvalue()
+
+        # Display rich output within the curses window
+        for idx, line in enumerate(rich_output.splitlines()):
+            try:
+                queue_win.addstr(idx + 1, 2, line[:width-4])
+            except curses.error:
+                pass  # Ignore errors caused by writing out of bounds
+
         queue_win.refresh()
 
         # Delay to prevent flickering
@@ -75,7 +100,7 @@ def timer_callback():
 previous_time = time.time()
 
 # Define animations with start times in seconds
-mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100)
+mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100, min_frequency=1.5, max_frequency=4.0)
 myLinearAnimation = LinearAnimation(starttime=2, speed=100)
 myGroupAnimation = AnimationGroupAdditive(starttime=5, animations=[mySineAnimation, myLinearAnimation])
 

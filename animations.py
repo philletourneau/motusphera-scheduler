@@ -117,12 +117,28 @@ class AnimationScheduler:
                 positions[i] += animation.positions[i]
         return positions
     
-    def getAnimationDetails(self) -> List[str]:
-        details = []
-        for animation in list(self.animations.queue):
-            params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items())
-            details.append(f"{animation.name}({params})")
-        return details
+    def getAnimationDetails(self, use_rich=False):
+        if use_rich:
+            from rich.console import Console
+            from rich.table import Table
+
+            console = Console()
+            table = Table(title="Animation Queue")
+
+            table.add_column("Animation Name", style="cyan", no_wrap=True)
+            table.add_column("Parameters", style="magenta")
+
+            for animation in self.animations.queue:
+                params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items() if k != 'positions')
+                table.add_row(animation.name, params)
+
+            console.print(table)
+        else:
+            details = []
+            for animation in self.animations.queue:
+                params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items() if k != 'positions')
+                details.append(f"{animation.name}({params})")
+            return details
 
     def nextFrame(self, currentTime, previousTime):
         # Check if currentAnimation should start
