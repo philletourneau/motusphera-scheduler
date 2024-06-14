@@ -8,12 +8,12 @@ class AnimationBase():
     name: str
     starttime: int
     isPlaying: bool
-    positions: list[float]
+    positions: List[float]
     ballsPerRing: List[int] = [50, 41, 32]
     numberOfRings: int = 3
     totalNumberOfBalls: int
 
-    def __init__(self, name, starttime):
+    def __init__(self, name: str, starttime: int):
         self.name = name
         self.starttime = starttime
         self.isPlaying = False
@@ -25,12 +25,14 @@ class AnimationBase():
 
     def updatePositions(self):
         pass
-    def calculateNextFrame(self, currentTime, previousTime):
+
+    def calculateNextFrame(self, currentTime: float, previousTime: float):
         self.updatePositions()
     
 class AnimationGroupAdditive(AnimationBase):
-    animations: list[AnimationBase]
-    def __init__(self, starttime, animations):
+    animations: List[AnimationBase]
+
+    def __init__(self, starttime: int, animations: List[AnimationBase]):
         super().__init__("group", starttime)
         self.animations = animations
     
@@ -45,7 +47,8 @@ class AnimationGroupAdditive(AnimationBase):
 
 class SinewaveAnimation(AnimationBase):
     max_amplitude: int
-    def __init__(self, starttime, max_amplitude):
+
+    def __init__(self, starttime: int, max_amplitude: int):
         super().__init__("sine wave", starttime)
         self.max_amplitude = max_amplitude
     
@@ -56,7 +59,8 @@ class SinewaveAnimation(AnimationBase):
     
 class LinearAnimation(AnimationBase):
     speed: int
-    def __init__(self, starttime, speed):
+
+    def __init__(self, starttime: int, speed: int):
         super().__init__("linear", starttime)
         self.speed = speed
     
