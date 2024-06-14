@@ -14,7 +14,7 @@ def output_positions(positions):
     # Update the positions of the balls in the sculpture
     simulatedSculpture.set_ball_positions(processed_positions2)
     
-    print("Positions!: {}".format(processed_positions))
+    #print("Positions!: {}".format(processed_positions))
 
 
 def main():

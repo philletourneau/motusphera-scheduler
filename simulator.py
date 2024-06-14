@@ -15,6 +15,7 @@ BALL_SPACING_MM = 240.0
 STEP_SIZE_MM = (5.0 * 180.0) / MAX_DISTANCE_STEPS
 RING_COUNT = 3
 BALLS_PER_RING = [50, 41, 32]  # Number of balls in each ring
+Y_OFFSET = 100
 
 class SimulatedSculpture:
     def __init__(self, ring_count, balls_per_ring, ball_start_y, step_size_mm):
@@ -35,14 +36,14 @@ class SimulatedSculpture:
 
     def resize_canvas(self, overall_height):
         current_canvas = canvas.get_selected()
-        current_canvas.width = overall_height / 1.0
-        current_canvas.height = overall_height / 1.0
+        current_canvas.width = overall_height / 1.4
+        current_canvas.height = overall_height / 1.5
 
     def make_bounding_box(self, overall_height):
-        margin = BALL_RADIUS_MM * 20.0
+        margin = BALL_RADIUS_MM * 18
         box_height = overall_height + margin
 
-        uppermost = box_height / 1.8
+        uppermost = box_height / 1.6
         lowermost = -1.0 * uppermost
 
         radius = 2.0
@@ -78,7 +79,7 @@ class SimulatedSculpture:
         curve(pos=[vector(lowermost, uppermost, uppermost), vector(lowermost, lowermost, uppermost)], radius=radius)
 
     def make_balls(self, overall_height):
-        self.ball_start_y = overall_height / 2.0
+        self.ball_start_y = overall_height
         self.balls = []
 
         for ring_index in range(self.ring_count):
@@ -124,11 +125,11 @@ class SimulatedSculpture:
         self.last_frame_time = now
 
         # Debug print to understand the structure of frame
-        print("Frame structure:", frame)
+        #print("Frame structure:", frame)
 
         for ring_index, ring in enumerate(frame):
             for ball_index, frame_position in enumerate(ring):
-                if frame_position < 0.0:
+                if frame_position > 0.0:
                     print(f'WARNING: Ball was commanded to move above the top of the sculpture! {frame_position}')
                 elif frame_position > MAX_DISTANCE_STEPS:
                     print(f'WARNING: Ball was commanded to move beyond the range of the sculpture! {frame_position} vs {MAX_DISTANCE_STEPS}')
