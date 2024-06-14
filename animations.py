@@ -99,23 +99,35 @@ class SinewaveAnimation(AnimationBase):
 
                 ball_index += 1
 
-
- 
 class LinearAnimation(AnimationBase):
     speed: int
 
     def __init__(self, starttime: int, speed: int):
         super().__init__("linear", starttime)
         self.speed = speed
-    
+
     def updatePositions(self, currentTime: float, previousTime: float):
-        self.positions = [i / self.totalNumberOfBalls for i in range(self.totalNumberOfBalls)]
+        elapsed_time = currentTime - self.starttime
+        period = 10 / self.speed  # Adjust the period based on the speed
+
+        # Calculate the position based on linear interpolation
+        t = (elapsed_time % period) / period
+        if t < 0.5:
+            position = 2 * t  # Linearly interpolate from 0 to 1
+        else:
+            position = 2 * (1 - t)  # Linearly interpolate from 1 to 0
+
+        # Set the position for all balls
+        self.positions = [position for _ in range(self.totalNumberOfBalls)]
+
+
 
 class AnimationScheduler:
     def __init__(self):
         self.animations = queue.Queue()
         self.currentAnimation: Optional[AnimationBase] = None
         self.nextAnimation: Optional[AnimationBase] = None
+        self.previous_positions = None  # Variable to store previous positions
     
     def appendToQueue(self, animation: AnimationBase):
         self.animations.put(animation)
@@ -168,10 +180,23 @@ class AnimationScheduler:
 
         if self.currentAnimation and self.currentAnimation.isPlaying:
             self.currentAnimation.calculateNextFrame(currentTime, previousTime)
-            #positions_str = ', '.join(f"{pos:.2f}" for pos in self.currentAnimation.positions)
+            positions = self.currentAnimation.positions
+
+            # Calculate and print deltas
+            if self.previous_positions is not None:
+                deltas = [abs(round((current - previous)*12000)) for current, previous in zip(positions, self.previous_positions)]
+                #print(f"Deltas: {deltas[:6]}")  # Print only the first 6 deltas
+                #multiply each delta by 5.8
+                modified_deltas = [int(delta * 5.8) for delta in deltas]
+                print(f"FPS: {modified_deltas[:6]}")  # Print only the first 6 modified deltas
+
+
+            # Update previous positions
+            self.previous_positions = positions
+
             if self.currentAnimation.isComplete():
                 self.deleteFromQueue()
-                self.currentAnimation = self.animations.queue[0] if not self.animations.empty() else None
-            
-            return self.currentAnimation.positions
+                self.currentAnimation = self.animations[0] if self.animations else None
+
+            return positions
 
