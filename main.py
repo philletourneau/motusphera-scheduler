@@ -20,7 +20,7 @@ class AnimationBase():
         self.positions = [0] * sum(AnimationBase.ballsPerRing)
         self.totalNumberOfBalls = sum(AnimationBase.ballsPerRing)
     
-    def isComplete(self):
+    def isComplete(self) -> bool:
         pass
 
     def updatePositions(self):
@@ -51,6 +51,7 @@ class SinewaveAnimation(AnimationBase):
     
     def updatePositions(self):
         self.positions = [math.sin(i) * self.max_amplitude for i in range(0, 360)]
+        print("updated positions in sinewave")
         #output 0 to 1
     
 class LinearAnimation(AnimationBase):
@@ -86,7 +87,18 @@ class AnimationScheduler():
             if animation.isPlaying:
                 activeAnimations.append(animation)
         
-        return self.positions
+        positions = [0] * (activeAnimations[0].totalNumberOfBalls if activeAnimations else 0)
+        for animation in activeAnimations:
+            for i in range(len(positions)):
+                positions[i] += animation.positions[i]
+        return positions
+    
+    def getAnimationDetails(self) -> List[str]:
+        details = []
+        for animation in list(self.animations.queue):
+            params = ', '.join(f"{k}={v}" for k, v in animation.__dict__.items())
+            details.append(f"{animation.name}({params})")
+        return details
 
     def nextFrame(self, currentTime, previousTime):
         if self.currentAnimation is not None:
@@ -110,9 +122,8 @@ def timer_callback():
 previous_time = time.time()
 scheduler = AnimationScheduler()
 
-
-mySineAnimation = SinewaveAnimation(starttime=9, max_amplitude=100)
-myLinearAnimation = LinearAnimation(starttime=10, speed=100)
+mySineAnimation = SinewaveAnimation(starttime=1, max_amplitude=100)
+myLinearAnimation = LinearAnimation(starttime=1, speed=100)
 myGroupAnimation = AnimationGroupAdditive(starttime=99, animations=[mySineAnimation, myLinearAnimation])
 
 scheduler.appendToQueue(mySineAnimation)
