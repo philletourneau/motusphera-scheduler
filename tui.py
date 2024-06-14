@@ -33,7 +33,13 @@ def update_display(stdscr):
         with positions_lock:
             if positions is not None:
                 for idx, pos in enumerate(positions):
-                    positions_win.addstr(idx + 1, 2, f"Position {idx}: {pos:.4f}")
+                    try:
+                        if isinstance(pos, (int, float)):
+                            positions_win.addstr(idx + 1, 2, f"Position {idx}: {pos:.4f}"[:width-4])
+                        else:
+                            positions_win.addstr(idx + 1, 2, f"Position {idx}: {pos}"[:width-4])
+                    except curses.error:
+                        pass  # Ignore errors caused by writing out of bounds
         
         positions_win.refresh()
 

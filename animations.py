@@ -121,9 +121,9 @@ class AnimationScheduler:
 
         if self.currentAnimation and self.currentAnimation.isPlaying:
             self.currentAnimation.calculateNextFrame(currentTime, previousTime)
-            positions_str = ', '.join(f"{pos:.2f}" for pos in self.currentAnimation.positions)
+            #positions_str = ', '.join(f"{pos:.2f}" for pos in self.currentAnimation.positions)
             if self.currentAnimation.isComplete():
                 self.deleteFromQueue()
                 self.currentAnimation = self.animations.queue[0] if not self.animations.empty() else None
             
-            return positions_str
+            return self.currentAnimation.positions
