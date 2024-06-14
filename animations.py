@@ -52,14 +52,26 @@ class AnimationGroupAdditive(AnimationBase):
 
 class SinewaveAnimation(AnimationBase):
     max_amplitude: int
+    min_frequency: float
+    max_frequency: float
 
-    def __init__(self, starttime: int, max_amplitude: int):
+    def __init__(self, starttime: int, max_amplitude: int, min_frequency: float, max_frequency: float):
         super().__init__("sine wave", starttime)
         self.max_amplitude = max_amplitude
+        self.min_frequency = min_frequency
+        self.max_frequency = max_frequency
+        self.start_time = time.time()
     
     def updatePositions(self):
-        self.positions = [(math.sin(math.radians(i)) * self.max_amplitude + self.max_amplitude) / (2 * self.max_amplitude) for i in range(360)]
-        print("Updated positions in sinewave")
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+        
+        # Calculate the current frequency using a sinusoidal function
+        frequency_range = (self.max_frequency - self.min_frequency) / 2
+        frequency_offset = (self.max_frequency + self.min_frequency) / 2
+        current_frequency = frequency_range * math.sin(elapsed_time) + frequency_offset
+        
+        self.positions = [(math.sin(math.radians(i * current_frequency)) * self.max_amplitude + self.max_amplitude) / (2 * self.max_amplitude) for i in range(360)]
 
 class LinearAnimation(AnimationBase):
     speed: int
