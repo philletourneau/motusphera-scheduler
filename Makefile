@@ -50,6 +50,10 @@ all: $(SHARED_LIB)
 # Build the shared library
 $(SHARED_LIB): $(OBJS)
 	$(CC) -shared -o $@ $(OBJS) $(LDFLAGS) $(RPATH_FLAG) -lmodbus -lm
+ifeq ($(UNAME_S), Darwin)
+	install_name_tool -delete_rpath lib/libmodbus/src/.libs $@
+	install_name_tool -add_rpath @loader_path/prebuilt/libmodbus/darwin $@
+endif
 
 # Compile source files into object files
 %.o: %.c $(DEPS)

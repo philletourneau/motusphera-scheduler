@@ -70,7 +70,7 @@ class SinewaveAnimation(AnimationBase):
 
     def updatePositions(self, currentTime: float, previousTime: float):
         self.elapsed_time += ((currentTime - previousTime) / 5)  # Adjust this factor to control speed
-        print(self.elapsed_time)
+        #print(self.elapsed_time)
 
         # Calculate the current frequency using a sinusoidal function
         frequency_range = (self.max_frequency - self.min_frequency)

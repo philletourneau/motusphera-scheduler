@@ -12,7 +12,7 @@
 #define MODBUS_TIMEOUT_USEC 800000
 #define MODBUS_TIMEOUT_SEC 0
 
-#define RESPONSE_BUFFER_SIZE 1024  //websocket server callback
+//#define RESPONSE_BUFFER_SIZE 1024  //websocket server callback
 
 #define SIMULATE 0  // Set to 1 to enable simulation, 0 to disable
 #define DEBUG 0

@@ -2,9 +2,14 @@ import sys
 import time
 import threading
 import ctypes
+import platform
+import signal
 import numpy as np
 from animations import AnimationScheduler, SinewaveAnimation, LinearAnimation, AnimationGroupAdditive
 from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
+
+# Define the MODBUS_MULTIPLIER
+MODBUS_MULTIPLIER = 12000
 
 # Load the shared library
 modbus_lib = ctypes.CDLL('./libmodbus_utils.dylib')
@@ -19,13 +24,28 @@ modbus_lib.send_positions_over_modbus.restype = None
 modbus_lib.close_modbus.argtypes = [ctypes.c_void_p]
 modbus_lib.close_modbus.restype = None
 
-# Initialize the Modbus connection
-device = b'/dev/ttyUSB0'  # Replace with your actual device
-baud_rate = 9600
+# Determine the port based on the operating system
+if platform.system() == 'Darwin':  # MacOS
+    port = '/dev/tty.usbserial-AC0134TM'
+else:
+    port = '/dev/ttyUSB0'
+
+# Initialize the Modbus connection using the port variable
+device = port.encode('utf-8')  # Convert the port string to bytes
+baud_rate = 460800
 ctx = modbus_lib.initialize_modbus(device, baud_rate)
 
 if not ctx:
     raise Exception("Failed to initialize Modbus connection")
+
+def send_to_modbus(positions, intervalms):
+    # Transform the positions
+    processed_positions = [int(pos * MODBUS_MULTIPLIER) for pos in positions]
+    
+    # Convert the processed positions list to a ctypes array
+    positions_array = (ctypes.c_uint16 * len(processed_positions))(*processed_positions)
+    #time_delta_value = 280  # Example value, replace with your actual value
+    modbus_lib.send_positions_over_modbus(ctx, positions_array, intervalms)
 
 # Create a global instance of SimulatedSculpture
 simulatedSculpture = None
@@ -39,10 +59,15 @@ def output_positions(positions):
     
     #print("Positions!: {}".format(processed_positions))
 
+def cleanup(signum, frame):
+    print("Cleaning up...")
+    modbus_lib.close_modbus(ctx)
+    sys.exit(0)
 
 def main():
     global simulatedSculpture
     use_tui = "tui" in sys.argv
+    simulate = "--simulate" in sys.argv
 
     if use_tui:
         import tui
@@ -70,20 +95,29 @@ def main():
         for detail in animation_details:
             print(detail)
     
-    # Initialize the SimulatedSculpture
-    simulatedSculpture = SimulatedSculpture(ring_count=3, balls_per_ring=[50, 41, 32], step_size_mm=STEP_SIZE_MM, ball_start_y=5000)
+    if simulate:
+        # Initialize the SimulatedSculpture
+        simulatedSculpture = SimulatedSculpture(ring_count=3, balls_per_ring=[50, 41, 32], step_size_mm=STEP_SIZE_MM, ball_start_y=5000)
 
     def timer_callback():
         current_time = time.time()
         nonlocal previous_time
+        interval = current_time - previous_time
+        print(f"Interval between timer callbacks: {interval:.6f} seconds")
         positions = scheduler.nextFrame(current_time, previous_time)
-        output_positions(positions)
-        send_to_modbus(positions)
+        if simulate:
+            output_positions(positions)
+        intervalms = int((interval * 1000))
+        send_to_modbus(positions, intervalms)
         previous_time = current_time
-        threading.Timer(0.25, timer_callback).start()
+        threading.Timer(0.1, timer_callback).start()
 
     # Start the timer
     timer_callback()
+
+    # Set up signal handler for graceful termination
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
 
     # Keep the main thread alive
     while True:
