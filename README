@@ -1,4 +1,7 @@
 README
 
-for now, just run 
-python main.py
+to run the program "headless"
+python main.py 
+
+to run the program with a terminal curses interface
+python main.py tui
