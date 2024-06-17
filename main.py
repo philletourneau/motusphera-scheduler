@@ -142,7 +142,7 @@ def main():
 
     # Define animations with start times in seconds
     myLinearAnimation = LinearAnimation(starttime=30, speed=0.7, min_value=0.01, max_value=0.6)
-    mySineWaveAnimation = SineWaveAnimation(starttime=0, speed=0.2, min_value=0.0, max_value=0.9, frequency_multiplier=2.0, wavelength_modifier=0.5)
+    mySineWaveAnimation = SineWaveAnimation(starttime=0, speed=0.32, min_value=0.0, max_value=0.9, frequency_multiplier=2.0, wavelength_modifier=0.5)
 
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineWaveAnimation, myLinearAnimation])
     # Append animations to scheduler
@@ -177,7 +177,7 @@ def main():
 
     def timer_callback():
         previous_time = time.time()
-        desired_interval_ns = 40_000_000  # Desired interval in nanoseconds (0.250 seconds)
+        desired_interval_ns = 48_000_000  # Desired interval in nanoseconds (0.250 seconds)
         while True:
             current_time = time.time()
             interval = current_time - previous_time
