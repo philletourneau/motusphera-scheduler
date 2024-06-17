@@ -5,12 +5,12 @@ import ctypes
 import platform
 import signal
 import numpy as np
-from animations import AnimationScheduler, SinewaveAnimation, LinearAnimation, AnimationGroupAdditive
+from animations import AnimationScheduler, SineWaveAnimation, LinearAnimation, AnimationGroupAdditive
 from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
 
 # Define the MODBUS_MULTIPLIER
 MODBUS_MULTIPLIER = 12000
-TIMING_SPEED_BUFFER = 40
+TIMING_SPEED_BUFFER = 140
 
 # Detect platform and set the shared library path
 if platform.system() == 'Darwin':  # macOS
@@ -91,15 +91,24 @@ ctx = modbus_lib.initialize_modbus(device, baud_rate)
 if not ctx:
     raise Exception("Failed to initialize Modbus connection")
 
+isModbusBusy = False
 def send_to_modbus(positions, intervalms):
+    global isModbusBusy
+    if isModbusBusy == True:
+        print("Modbus is busy, skipping this frame")
+        return
+    isModbusBusy = True 
+    #print("True")
     # Transform the positions
     processed_positions = [int(pos * MODBUS_MULTIPLIER) for pos in positions]
     
     # Convert the processed positions list to a ctypes array
     positions_array = (ctypes.c_uint16 * len(processed_positions))(*processed_positions)
     #time_delta_value = 280  # Example value, replace with your actual value
-    intervalms = intervalms + TIMING_SPEED_BUFFER
-    modbus_lib.send_positions_over_modbus(ctx, positions_array, intervalms)
+    #intervalms = intervalms + TIMING_SPEED_BUFFER
+    modbus_lib.send_positions_over_modbus(ctx, positions_array, (intervalms))
+    isModbusBusy = False
+    #print("False")
 
 # Create a global instance of SimulatedSculpture
 simulatedSculpture = None
@@ -132,15 +141,16 @@ def main():
     previous_time = time.time()
 
     # Define animations with start times in seconds
-    mySineAnimation = SinewaveAnimation(starttime=0, max_amplitude=0.5, min_frequency=0.1, max_frequency=3.0)
-    myLinearAnimation = LinearAnimation(starttime=30, speed=0.2)
-    myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineAnimation, myLinearAnimation])
+    myLinearAnimation = LinearAnimation(starttime=30, speed=0.7, min_value=0.01, max_value=0.6)
+    mySineWaveAnimation = SineWaveAnimation(starttime=0, speed=0.5, min_value=0.0, max_value=0.9, frequency_multiplier=2.0, wavelength_modifier=0.5)
 
+    myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineWaveAnimation, myLinearAnimation])
     # Append animations to scheduler
     ## BUG the order they're appended makes a difference, it shouldnt'
-    scheduler.appendToQueue(mySineAnimation)
+    scheduler.appendToQueue(mySineWaveAnimation)
     scheduler.appendToQueue(myLinearAnimation)
     scheduler.appendToQueue(myGroupAnimation)
+    
     
 
     # Pretty print the queued animations
@@ -167,7 +177,7 @@ def main():
 
     def timer_callback():
         previous_time = time.time()
-        desired_interval_ns = 80_000_000  # Desired interval in nanoseconds (0.08 seconds)
+        desired_interval_ns = 9_200_000  # Desired interval in nanoseconds (0.250 seconds)
         while True:
             current_time = time.time()
             interval = current_time - previous_time

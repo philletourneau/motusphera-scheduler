@@ -52,74 +52,74 @@ class AnimationGroupAdditive(AnimationBase):
         if max_position != 0:
             self.positions = [p / max_position for p in self.positions]
 
-import math
 
-class SinewaveAnimation(AnimationBase):
-    max_amplitude: int
-    min_frequency: float
-    max_frequency: float
-    elapsed_time: float
-
-    def __init__(self, starttime: int, max_amplitude: int, min_frequency: float, max_frequency: float):
-        super().__init__("sine wave", starttime)
-        self.max_amplitude = max_amplitude
-        self.min_frequency = min_frequency
-        self.max_frequency = max_frequency
-        self.elapsed_time = 0.0
-        self.last_positions = [0.0] * self.totalNumberOfBalls
-
-    def updatePositions(self, currentTime: float, previousTime: float):
-        self.elapsed_time += ((currentTime - previousTime) / 5)  # Adjust this factor to control speed
-        #print(self.elapsed_time)
-
-        # Calculate the current frequency using a sinusoidal function
-        frequency_range = (self.max_frequency - self.min_frequency)
-        frequency_offset = (self.max_frequency + self.min_frequency) / 2
-        current_frequency = (currentTime - previousTime) * frequency_range
-
-        # Introduce a frequency multiplier to make the sine wave pattern more pronounced
-        frequency_multiplier = 2.0  # Adjust this value to make the sine wave more visible
-
-        ball_index = 0
-
-        for ring in range(self.numberOfRings):
-            total_balls = self.ballsPerRing[ring]
-            # Set the phase offset in degrees and convert to radians
-            ring_phase_offset_degrees = ring * (360 / self.numberOfRings)
-            ring_phase_offset_radians = math.radians(ring_phase_offset_degrees)
-
-            for ball in range(total_balls):
-                # Calculate the angle for the current ball
-                angle = (2 * math.pi * ball) / total_balls * frequency_multiplier + ring_phase_offset_radians
-                sine_value = math.sin(angle + current_frequency * self.elapsed_time)
-                target_position = (self.max_amplitude / 2) * (1 + sine_value)
-
-                self.positions[ball_index] = max(0, min(self.max_amplitude, target_position))
-                self.last_positions[ball_index] = self.positions[ball_index]
-
-                ball_index += 1
-
-class LinearAnimation(AnimationBase):
+class SineWaveAnimation(AnimationBase):
     speed: int
+    min_value: float
+    max_value: float
+    frequency_multiplier: float
+    wavelength_modifier: float
 
-    def __init__(self, starttime: int, speed: int):
-        super().__init__("linear", starttime)
+    def __init__(self, starttime: int, speed: int, min_value: float = 0.1, max_value: float = 0.4, frequency_multiplier: float = 1.0, wavelength_modifier: float = 1.0):
+        super().__init__("snake", starttime)
         self.speed = speed
+        self.min_value = min_value
+        self.max_value = max_value
+        self.frequency_multiplier = frequency_multiplier
+        self.wavelength_modifier = wavelength_modifier
 
     def updatePositions(self, currentTime: float, previousTime: float):
         elapsed_time = currentTime - self.starttime
+        print("elapsed time: ", elapsed_time)
+
+        ball_index = 0
+        for ring in range(self.numberOfRings):
+            total_balls = self.ballsPerRing[ring]
+            for ball in range(total_balls):
+                # Each ball in the ring will have a phase shift based on its index, frequency multiplier, and wavelength modifier
+                phase_shift = self.frequency_multiplier * (2 * math.pi * ball) / (total_balls * self.wavelength_modifier)
+                sine_value = math.sin((elapsed_time * self.speed) + phase_shift)
+                
+                # Scale the position to the desired range
+                position = self.min_value + (self.max_value - self.min_value) * (0.5 * (1 + sine_value))
+                
+                self.positions[ball_index] = position
+                ball_index += 1
+
+        print(self.positions[:3])  # Print only the first 3 positions for debugging
+
+class LinearAnimation(AnimationBase):
+    speed: int
+    min_value: float
+    max_value: float
+
+    def __init__(self, starttime: int, speed: int, min_value: float = 0.1, max_value: float = 0.4):
+        super().__init__("linear", starttime)
+        self.speed = speed
+        self.min_value = min_value
+        self.max_value = max_value
+
+    def triangular_wave(self, t: float) -> float:
+        return 2 * abs(t - math.floor(t + 0.5))
+
+    def updatePositions(self, currentTime: float, previousTime: float):
+        elapsed_time = currentTime - self.starttime
+        print("elapsed time: ", elapsed_time)
         period = 10 / self.speed  # Adjust the period based on the speed
 
         # Calculate the position based on linear interpolation
         t = (elapsed_time % period) / period
-        if t < 0.5:
-            position = 2 * t  # Linearly interpolate from 0 to 1
-        else:
-            position = 2 * (1 - t)  # Linearly interpolate from 1 to 0
+
+        # Apply the triangular wave function
+        wave_t = self.triangular_wave(t)
+
+        # Scale the position to the desired range
+        position = self.min_value + (self.max_value - self.min_value) * wave_t
 
         # Set the position for all balls
         self.positions = [position for _ in range(self.totalNumberOfBalls)]
 
+        print(self.positions)
 
 
 class AnimationScheduler:
@@ -187,8 +187,9 @@ class AnimationScheduler:
                 deltas = [abs(round((current - previous)*12000)) for current, previous in zip(positions, self.previous_positions)]
                 #print(f"Deltas: {deltas[:6]}")  # Print only the first 6 deltas
                 #multiply each delta by 5.8
+                #print(f"Positions: {positions[0]*12000}")  # Print only the first 6 positions
                 modified_deltas = [int(delta * 5.8) for delta in deltas]
-                print(f"FPS: {modified_deltas[:6]}")  # Print only the first 6 modified deltas
+                #print(f"FPS: {modified_deltas[:6]}")  # Print only the first 6 modified deltas
 
 
             # Update previous positions
@@ -198,5 +199,6 @@ class AnimationScheduler:
                 self.deleteFromQueue()
                 self.currentAnimation = self.animations[0] if self.animations else None
 
+            #print(positions)
             return positions
 
