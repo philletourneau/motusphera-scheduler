@@ -10,7 +10,7 @@ from simulator import SimulatedSculpture, BALLS_PER_RING, STEP_SIZE_MM
 
 # Define the MODBUS_MULTIPLIER
 MODBUS_MULTIPLIER = 12000
-TIMING_SPEED_BUFFER = 140
+TIMING_SPEED_BUFFER = 10
 
 # Detect platform and set the shared library path
 if platform.system() == 'Darwin':  # macOS
@@ -101,11 +101,11 @@ def send_to_modbus(positions, intervalms):
     #print("True")
     # Transform the positions
     processed_positions = [int(pos * MODBUS_MULTIPLIER) for pos in positions]
-    
+    print(processed_positions[:4])
     # Convert the processed positions list to a ctypes array
     positions_array = (ctypes.c_uint16 * len(processed_positions))(*processed_positions)
     #time_delta_value = 280  # Example value, replace with your actual value
-    #intervalms = intervalms + TIMING_SPEED_BUFFER
+    intervalms = intervalms + TIMING_SPEED_BUFFER
     modbus_lib.send_positions_over_modbus(ctx, positions_array, (intervalms))
     isModbusBusy = False
     #print("False")
@@ -142,7 +142,7 @@ def main():
 
     # Define animations with start times in seconds
     myLinearAnimation = LinearAnimation(starttime=30, speed=0.7, min_value=0.01, max_value=0.6)
-    mySineWaveAnimation = SineWaveAnimation(starttime=0, speed=0.5, min_value=0.0, max_value=0.9, frequency_multiplier=2.0, wavelength_modifier=0.5)
+    mySineWaveAnimation = SineWaveAnimation(starttime=0, speed=0.2, min_value=0.0, max_value=0.9, frequency_multiplier=2.0, wavelength_modifier=0.5)
 
     myGroupAnimation = AnimationGroupAdditive(starttime=50, animations=[mySineWaveAnimation, myLinearAnimation])
     # Append animations to scheduler
@@ -177,7 +177,7 @@ def main():
 
     def timer_callback():
         previous_time = time.time()
-        desired_interval_ns = 9_200_000  # Desired interval in nanoseconds (0.250 seconds)
+        desired_interval_ns = 40_000_000  # Desired interval in nanoseconds (0.250 seconds)
         while True:
             current_time = time.time()
             interval = current_time - previous_time

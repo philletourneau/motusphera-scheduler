@@ -70,7 +70,7 @@ class SineWaveAnimation(AnimationBase):
 
     def updatePositions(self, currentTime: float, previousTime: float):
         elapsed_time = currentTime - self.starttime
-        print("elapsed time: ", elapsed_time)
+        #print("elapsed time: ", elapsed_time)
 
         ball_index = 0
         for ring in range(self.numberOfRings):
@@ -86,7 +86,7 @@ class SineWaveAnimation(AnimationBase):
                 self.positions[ball_index] = position
                 ball_index += 1
 
-        print(self.positions[:3])  # Print only the first 3 positions for debugging
+        #print(self.positions[:3])  # Print only the first 3 positions for debugging
 
 class LinearAnimation(AnimationBase):
     speed: int
@@ -104,7 +104,7 @@ class LinearAnimation(AnimationBase):
 
     def updatePositions(self, currentTime: float, previousTime: float):
         elapsed_time = currentTime - self.starttime
-        print("elapsed time: ", elapsed_time)
+        #print("elapsed time: ", elapsed_time)
         period = 10 / self.speed  # Adjust the period based on the speed
 
         # Calculate the position based on linear interpolation
@@ -119,7 +119,7 @@ class LinearAnimation(AnimationBase):
         # Set the position for all balls
         self.positions = [position for _ in range(self.totalNumberOfBalls)]
 
-        print(self.positions)
+        #print(self.positions)
 
 
 class AnimationScheduler:

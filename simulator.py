@@ -9,7 +9,7 @@ MAX_DISTANCE_MM = MAX_DISTANCE_STEPS / STEP_SIZE_MM
 BASE_RADIUS = 1219.2
 GAP_BETWEEN_RINGS = 228.6
 MAX_DISTANCE_STEPS = 11000.0
-MAX_BALL_VELOCITY = 1400.0
+MAX_BALL_VELOCITY = 2800.0
 BALL_RADIUS_MM = 40
 BALL_SPACING_MM = 240.0
 STEP_SIZE_MM = (5.0 * 180.0) / MAX_DISTANCE_STEPS
@@ -138,7 +138,7 @@ class SimulatedSculpture:
                 if time_since_last_frame is not None:
                     velocity = abs(frame_position - last_position) / time_since_last_frame
                     if velocity > MAX_BALL_VELOCITY:
-                        print(f'WARNING: Ball was commanded to move faster than the max velocity! ({velocity} vs {MAX_BALL_VELOCITY} points/s)')
+                        print(f'WARNING: Faster than max velocity! ({velocity} vs {MAX_BALL_VELOCITY} steps/s)')
                     #     # Clamp the velocity
                     #     if frame_position > last_position:
                     #         frame_position = last_position + MAX_BALL_VELOCITY * time_since_last_frame
