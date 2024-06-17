@@ -1,6 +1,6 @@
 #define SYNC_REG_ADDR 99
 #define POSITION_START_ADDR 100
-#define BUFFER_MS 20  // 54 Define a buffer of 5.4ms
+#define BUFFER_MS 60  // 54 Define a buffer of 5.4ms
 #define NUM_MOTORS 123
 #define NUM_UNITS 31
 #define MOTORS_PER_UNIT 4

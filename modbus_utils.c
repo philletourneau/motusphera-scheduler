@@ -52,33 +52,9 @@ void configure_error_safe_modbus(modbus_t *ctx, int slave_id) {
 }
 
 
-// modbus_t *initialize_modbus(const char *device, int baud_rate) {
-//     int fd = open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
-//     if (fd == -1) {
-//         fprintf(stderr, "Error opening %s: %s\n", device, strerror(errno));
-//         exit(EXIT_FAILURE);
-//     }
-//     close(fd);
-
-//     modbus_t *ctx = modbus_new_rtu(device, baud_rate, 'N', 8, 1);
-//     if (ctx == NULL) {
-//         fprintf(stderr, "Unable to create the libmodbus context\n");
-//         return NULL;
-//     }
-
-//     if (modbus_connect(ctx) == -1) {
-//         fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-//         modbus_free(ctx);
-//         return NULL;
-//     }
-
-//     return ctx;
-// }
-
-
 void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t time_delta_value) {
     struct timespec sleep_duration = {0, BUFFER_MS * 100000L};
-    struct timespec longer_sleep_duration = {0, (BUFFER_MS+30) * 100000L};
+    struct timespec longer_sleep_duration = {0, (BUFFER_MS+5) * 100000L};
     #if DEBUG
     struct timespec loop_start_time, loop_end_time, write_start_time, write_end_time;
     clock_gettime(CLOCK_MONOTONIC, &loop_start_time);
@@ -97,6 +73,7 @@ void send_positions_over_modbus(modbus_t *ctx, uint16_t *positions, uint16_t tim
 
         set_modbus_slave(ctx, 0);
         //modbus_set_response_timeout(ctx, 0, 10000);  //21000 = 21ms
+        //printf("data: %d %d %d %d \n", data[0], data[1], data[2], data[3]);
 
         int rc = modbus_write_registers(ctx, start_address, MOTORS_PER_UNIT, data);
         if (rc == -1) {
