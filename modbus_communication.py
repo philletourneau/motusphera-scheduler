@@ -59,7 +59,7 @@ def send_to_modbus(ctx, positions, intervalms):
     modbus_lib.send_positions_over_modbus(ctx, positions_array, (intervalms))
     # Increment the counter and print the value
     successful_runs += 1
-    print(f"Successful runs: {successful_runs}")
+    # print(f"Successful runs: {successful_runs}")
     isModbusBusy = False
     #print("False")
 
