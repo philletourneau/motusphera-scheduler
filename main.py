@@ -8,7 +8,7 @@ from config import sleep_ns
 from modbus_communication import send_to_modbus, cleanup, initialize_modbus, write_coils
 from animation_handler import setup_scheduler
 from simulation import initialize_simulation, output_positions
-from websocket_server import run_websocket_server, data_queue, received_positions, positions_lock, scheduler as ws_scheduler  # Import the WebSocket server function and the shared queue
+from websocket_server import run_websocket_server, data_queue, received_positions, positions_lock, set_scheduler  # Import the WebSocket server function and the setter function
 
 def main():
     use_tui = "tui" in sys.argv
@@ -20,7 +20,7 @@ def main():
         import tui
 
     scheduler = setup_scheduler()
-    ws_scheduler = scheduler  # Set the scheduler for the WebSocket server
+    set_scheduler(scheduler)  # Set the scheduler for the WebSocket server
     
     previous_time = time.time()
 
@@ -56,7 +56,7 @@ def main():
             current_time = time.time()
             interval = current_time - previous_time
             interval_ms = interval * 1000
-            print(f"Interval : {interval_ms:.0f} ms")
+            print(f"Interval between callbacks: {interval_ms:.0f} milliseconds")
             
             if use_websocket_positions:
                 with positions_lock:

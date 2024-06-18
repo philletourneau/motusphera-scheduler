@@ -9,6 +9,11 @@ data_queue = queue.Queue()
 received_positions = None
 positions_lock = threading.Lock()
 scheduler = None  # This will be set from the main application
+send_positions_flag = False  # Default to off
+
+def set_scheduler(sched):
+    global scheduler
+    scheduler = sched
 
 async def handler(websocket, path):
     global received_positions
@@ -31,7 +36,7 @@ async def handler(websocket, path):
         connected_clients.remove(websocket)
 
 async def process_command(command):
-    global received_positions
+    global received_positions, send_positions_flag
     response = {"status": "error", "message": "Unknown command"}
     
     if "action" not in command:
@@ -69,6 +74,9 @@ async def process_command(command):
         with positions_lock:
             received_positions = positions
         response = {"status": "success", "message": "Positions received"}
+    elif action == "toggle_send_positions":
+        send_positions_flag = not send_positions_flag
+        response = {"status": "success", "message": f"Send positions {'enabled' if send_positions_flag else 'disabled'}"}
 
     return response
 
@@ -86,7 +94,7 @@ def create_animation(animation_type, starttime, params):
 
 async def send_updates():
     while True:
-        if not data_queue.empty():
+        if send_positions_flag and not data_queue.empty():
             data = data_queue.get()
             for client in connected_clients:
                 await client.send(f"Update: {data}")
