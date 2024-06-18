@@ -2,15 +2,19 @@ import sys
 import time
 import threading
 import signal
+import queue
+import json
 from config import sleep_ns
 from modbus_communication import send_to_modbus, cleanup, initialize_modbus, write_coils
 from animation_handler import setup_scheduler
 from simulation import initialize_simulation, output_positions
+from websocket_server import run_websocket_server, data_queue, received_positions, positions_lock  # Import the WebSocket server function and the shared queue
 
 def main():
     use_tui = "tui" in sys.argv
     simulate = "--simulate" in sys.argv
     homing = "--homing" in sys.argv
+    use_websocket_positions = "--use-websocket-positions" in sys.argv
 
     if use_tui:
         import tui
@@ -30,7 +34,7 @@ def main():
     if simulate:
         initialize_simulation()
         ctx = None  # No Modbus context in simulation mode
-        desired_interval_ns = 200_000_000  # 100 milliseconds for simulation mode
+        desired_interval_ns = 100_000_000  # 100 milliseconds for simulation mode
     else:
         ctx = initialize_modbus()
         desired_interval_ns = 48_000_000  # 48 milliseconds for non-simulation mode
@@ -52,7 +56,13 @@ def main():
             interval = current_time - previous_time
             interval_ms = interval * 1000
             print(f"Interval between callbacks: {interval_ms:.0f} milliseconds")
-            positions = scheduler.nextFrame(current_time, previous_time)
+            
+            if use_websocket_positions:
+                with positions_lock:
+                    positions = received_positions
+            else:
+                positions = scheduler.nextFrame(current_time, previous_time)
+            
             if positions is None:
                 print("Error: positions is None")
                 continue
@@ -61,12 +71,20 @@ def main():
             else:
                 intervalms = int((interval * 1000))
                 send_to_modbus(ctx, positions, intervalms)
+            
+            # Put the positions into the queue for the WebSocket server to send
+            data_queue.put(positions)
+            
             previous_time = current_time
             sleep_ns(desired_interval_ns)
 
     # Start the timer
     timer_thread = threading.Thread(target=timer_callback)
     timer_thread.start()
+
+    # Start the WebSocket server on a dedicated thread
+    websocket_thread = threading.Thread(target=run_websocket_server)
+    websocket_thread.start()
 
     # Set up signal handler for graceful termination
     if ctx:

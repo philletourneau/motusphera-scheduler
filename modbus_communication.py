@@ -1,5 +1,6 @@
 import ctypes
-import platform  # Add this import statement
+import sys
+import platform 
 from config import modbus_lib, MODBUS_MULTIPLIER, TIMING_SPEED_BUFFER
 
 # Define the argument and return types of the functions you will use
