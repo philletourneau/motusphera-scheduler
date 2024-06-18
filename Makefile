@@ -40,18 +40,24 @@ INCLUDES = -I.
 # Source Files
 SRCS = modbus_utils.c
 
+# Object Files Directory
+OBJDIR = build
+
 # Object Files
-OBJS = $(SRCS:.c=.o)
+OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS))
 
 # Shared Library Name
 SHARED_LIB = $(SHARED_LIB_DIR)/libmodbus_utils.$(SHARED_LIB_EXT)
 
 # Default target
-all: $(SHARED_LIB_DIR) $(SHARED_LIB)
+all: $(SHARED_LIB_DIR) $(OBJDIR) $(SHARED_LIB)
 
-# Ensure the output directory exists
+# Ensure the output directories exist
 $(SHARED_LIB_DIR):
 	mkdir -p $(SHARED_LIB_DIR)
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
 # Build the shared library
 $(SHARED_LIB): $(OBJS)
@@ -61,10 +67,10 @@ ifeq ($(UNAME_S), Darwin)
 endif
 
 # Compile source files into object files
-%.o: %.c $(DEPS)
+$(OBJDIR)/%.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # Clean up build files
 .PHONY: clean
 clean:
-	rm -f *.o $(SHARED_LIB_DIR)/*.dylib $(SHARED_LIB_DIR)/*.so
+	rm -f $(OBJDIR)/*.o $(SHARED_LIB_DIR)/*.dylib $(SHARED_LIB_DIR)/*.so
